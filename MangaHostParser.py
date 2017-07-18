@@ -24,7 +24,7 @@ class MangaHostParser():
 
     def search_for(self, title):
         title.replace('\s', '+')
-        soup = BS(self._get_html(MangaHostParser.SEARCH_URL + title, headers=MangaHostParser.HDR), "lxml")
+        soup = BS(self._get_html(MangaHostParser.SEARCH_URL + title), "lxml")
         search_results = soup.find_all("h3", {"class": "entry-title"})
 
         manga_list = []
@@ -53,7 +53,7 @@ class MangaHostParser():
 
         i = 0
         while i < len(links):
-            links[i] = re.search(r'(?<=src=\').*?(?=\')', links[i]).group(0)
+            links[i] = re.search(r"(?<=src=').*?(?=')", links[i]).group(0)
             i+=1
         return links
 
@@ -63,7 +63,7 @@ class MangaHostParser():
 
     def download_url(self, url):
         opener = urllib.request.build_opener()
-        opener.addheaders = [('User-Agent', MangaHostParser.hdr['User-Agent'])]
+        opener.addheaders = [('User-Agent', MangaHostParser.HDR['User-Agent'])]
         urllib.request.install_opener(opener)
         urllib.request.urlretrieve(url, self.get_filename(url))
 
