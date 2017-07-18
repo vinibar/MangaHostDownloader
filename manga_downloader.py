@@ -16,6 +16,8 @@ Todo:
 
 
 import urllib.request ,urllib.error, urllib
+import zipfile
+import os
 from bs4 import BeautifulSoup as BS
 import re
 
@@ -77,5 +79,40 @@ def get_pages_from_url(url):
         links[i] = re.search(r'(?<=src=\').*?(?=\')', links[i]).group(0)
         i+=1
     return links
+
+def get_filename(url):
+    splitted_url = url.split("/")
+    return splitted_url[-1]
+
+def download_url(url):
+    opener = urllib.request.build_opener()
+    opener.addheaders = [('User-Agent', hdr['User-Agent'])]
+    urllib.request.install_opener(opener)
+    urllib.request.urlretrieve(url, get_filename(url))
+
+def download_issue_none(url):
+    for page in get_pages_from_url(url):
+        download_url(page)
+
+def download_issue_zip(url):
+    names = []
+    zip = zipfile.ZipFile('teste.zip', 'a')
+    for page in get_pages_from_url(base_url):
+        download_url(page)
+        names.append(get_filename(page))
+
+    for name in names:
+        zip.write(name)
+        os.remove(name)
+    zip.close()
+
+def download_issue(url, mode=None):
+    if mode == None:
+        download_issue_none(url)
+    elif mode == 'zip':
+        download_issue_zip(url)
+    else:
+        pass
+
 
 #print(get_issues_from_url(base_url))
