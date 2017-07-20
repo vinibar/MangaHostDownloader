@@ -1,69 +1,81 @@
 # -*- coding: utf-8 -*-
 import os
-from Downloader import Downloader
-from MangaHostParser import MangaHostParser
+
+from tabulate import tabulate
+
+from progress import progress
+from mhdownloader import MangaHostDownloader
+from mhparser import MangaHostParser
+
 
 def choose_manga():
     choice = None
     while not choice:
-        choice = input("Type the name of a manga you want: ")
+        choice = input("Qual mangá você busca? > ")
     return choice
 
 if __name__ == '__main__':
-    print(' ---------------- MangaHost Downloader ----------------')
-    print('* This program was created just for learning purposese.')
-    print(' ------------------------------------------------------')
-    print('\n\n')
+
+    print('------------------ MangaHost Downloader -------------------')
+    print('|Esse programa foi criado apenas para fins de aprendizagem|')
+    print('-----------------------------------------------------------')
+    print('\n')
 
     manga_name = str(choose_manga())
 
     parser = MangaHostParser()
     results = parser.search_for(manga_name)
     if not results:
-        print("Sorry, there's no results for this search")
+        print("Não há resultados para essa busca.")
         exit(0)
 
-    print("Choose the best result:\n\n")
+    print("Resultados da busca:\n")
     count = 0
+    tab_results = []
     for item in results:
-        print(count, "\t", item['title'])
+        tab_results.append([count, item['title']])
         count += 1
 
+    print(tabulate(tab_results, headers=['#', 'Título'], tablefmt='orgtbl'))
+    print()
     choice = None
 
     while True:
-        choice = input(">")
+        choice = input("Digite o tem desejado: >")
         if not choice.isdigit():
-            print("Incorrect answer. Try again.")
+            print("Opção inválida. Tente novamente.")
+            continue
         if not results[int(choice)]:
-            print("Invalid option. Try again.")
+            print("Opção inválida. Tente novamente.")
+            continue
         break
 
     manga_name = results[int(choice)]["title"]
     manga_url = results[int(choice)]["url"]
 
     issues_list = parser.get_issues_list(manga_url)
-    print("There are " + str(len(issues_list) + 1) + " avaliable. Choose the numbers you want")
-    print("eg: 5, 6, 10-15, 23")
-    print("or, if you want to download them all, type *")
+    print("Esse mangá possui " + str(len(issues_list)) + " edições disponíveis.")
+    print("Digite as edições que deseja separadas por vírgula.")
+    print("\tExemplo: 5, 6, 10-15, 23")
+    print("Caso deseje todas, digite *")
 
-    downloader = Downloader()
+    mhdownloader = MangaHostDownloader()
 
     choice = input(">")
-    path = os.getcwd() + "\\" + manga_name + "\\"
+    base_path = os.getcwd() + "\\" + manga_name + "\\"
 
     if choice == '*':
         for issue in issues_list:
-            path = path + issue["title"] + "\\"
+            path = base_path + issue["title"] + "\\"
             for page in parser.get_pages_from_url(issue["url"]):
-                 downloader.download_url(page, path)
+                 mhdownloader.download_url(page, path)
     else:
         chosen_issues = choice.split(",")
+
         for chosen_issue in chosen_issues:
             issue = issues_list[int(chosen_issue)-1]
-            path = path + issue["title"] + "\\"
-            if not os.path.exists(os.path.dirname(path)):
-                os.makedirs(os.path.dirname(path))
-
-            for page in parser.get_pages_from_url(issue["url"]):
-                downloader.download_url(page, path)
+            path = base_path + issue["title"] + "\\"
+            pages_list = parser.get_pages_from_url(issue["url"])
+            for idx, page in enumerate(pages_list):
+                progress(idx + 1, len(pages_list), issue["title"])
+                mhdownloader.download_url(page, path)
