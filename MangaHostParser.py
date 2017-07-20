@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import urllib.request ,urllib.error, urllib
-import zipfile
+
 import os
 import re
 from operator import itemgetter
@@ -56,37 +56,3 @@ class MangaHostParser():
             links[i] = re.search(r"(?<=src=').*?(?=')", links[i]).group(0)
             i+=1
         return links
-
-    def get_filename(self, url):
-        splitted_url = url.split("/")
-        return splitted_url[-1]
-
-    def download_url(self, url):
-        opener = urllib.request.build_opener()
-        opener.addheaders = [('User-Agent', MangaHostParser.HDR['User-Agent'])]
-        urllib.request.install_opener(opener)
-        urllib.request.urlretrieve(url, self.get_filename(url))
-
-    def download_issue_none(self, url):
-        for page in self.get_pages_from_url(url):
-            self.download_url(page)
-
-    def download_issue_zip(self, url):
-        names = []
-        zip = zipfile.ZipFile('teste.zip', 'a')
-        for page in self.get_pages_from_url(url):
-            self.download_url(page)
-            names.append(self.get_filename(page))
-
-        for name in names:
-            zip.write(name)
-            os.remove(name)
-        zip.close()
-
-    def download_issue(self, url, mode=None):
-        if mode == None:
-            self.download_issue_none(url)
-        elif mode == 'zip':
-            self.download_issue_zip(url)
-        else:
-            pass
