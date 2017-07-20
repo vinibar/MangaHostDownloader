@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import urllib.request ,urllib.error, urllib
 
-import os
 import re
 from operator import itemgetter
 from bs4 import BeautifulSoup as BS
@@ -36,15 +35,24 @@ class MangaHostParser():
     def get_issues_list(self, url):
         soup = BS(self._get_html(url), "lxml")
         ul = soup.find("ul", {"class": "list_chapters"})
-        a_list = ul.find_all('a')
-
         issues_list = []
-        for a in a_list:
-            s = BS(a.get('data-content'), "lxml")
-            a2 = s.find('a')
-            issues_list.append({"title": a.get('data-original-title'),
-                                "url": a2.get('href'),
-                                "id": int(a.get('id'))})
+        if ul:
+            a_list = ul.find_all('a')
+            for a in a_list:
+                s = BS(a.get('data-content'), "lxml")
+                a2 = s.find('a')
+                issues_list.append({"title": a.get('data-original-title'),
+                                    "url": a2.get('href'),
+                                    "id": a.get('id')})
+        else:
+            a_list = soup.find_all("a", {"class":"capitulo"})
+            id = len(a_list)
+            for a in a_list:
+                issues_list.append({"title": a.contents[0],
+                                    "url": a.get('href'),
+                                    "id": id})
+                id -= 1
+
         return sorted(issues_list, key=itemgetter('id'))
 
     def get_pages_from_url(self, url):
