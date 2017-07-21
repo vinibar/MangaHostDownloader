@@ -24,8 +24,9 @@ if __name__ == '__main__':
     manga_name = str(choose_manga())
 
     parser = MangaHostParser()
-    results = parser.search_for(manga_name)
-    if not results:
+    try:
+        results = parser.search_for(manga_name)
+    except AttributeError:
         print("Não há resultados para essa busca.")
         exit(0)
 
@@ -53,29 +54,58 @@ if __name__ == '__main__':
     manga_name = results[int(choice)]["title"]
     manga_url = results[int(choice)]["url"]
 
-    issues_list = parser.get_issues_list(manga_url)
+    issues_list, special_list = parser.get_issues_list(manga_url)
     print("Esse mangá possui " + str(len(issues_list)) + " edições disponíveis.")
+    print("Sendo " + str(len(special_list)) + " especiais (últimas da lista)")
+    print("Para listar todas, digite `list`")
     print("Digite as edições que deseja separadas por vírgula.")
     print("\tExemplo: 5, 6, 10-15, 23")
-    print("Caso deseje todas, digite *")
+    print("Para baixar todas, digite *")
 
     mhdownloader = MangaHostDownloader()
 
-    choice = input(">")
-    base_path = os.getcwd() + "\\" + manga_name + "\\"
+    while True:
+        choice = input(">")
+        base_path = os.getcwd() + "\\" + manga_name + "\\"
 
-    if choice == '*':
-        for issue in issues_list:
-            path = base_path + issue["title"] + "\\"
-            for page in parser.get_pages_from_url(issue["url"]):
-                 mhdownloader.download_url(page, path)
-    else:
-        chosen_issues = choice.split(",")
+        if choice == '*':
+            for issue in issues_list:
+                path = base_path + issue["title"] + "\\"
+                pages_list = parser.get_pages_from_url(issue["url"])
+                for idx, page in enumerate(pages_list):
+                    progress(idx + 1, len(pages_list), issue["title"])
+                    mhdownloader.download_url(page, path)
+                print()
+            exit(0)
+        elif choice == 'list':
+            tab_results = []
+            count = 1
+            for issue in issues_list:
+                tab_results.append([count, issue['title']])
+                count += 1
+            print(tabulate(tab_results, headers=['#','Título'], tablefmt='orgtbl'))
+        else:
+            chosen_issues = choice.split(",")
 
-        for chosen_issue in chosen_issues:
-            issue = issues_list[int(chosen_issue)-1]
-            path = base_path + issue["title"] + "\\"
-            pages_list = parser.get_pages_from_url(issue["url"])
-            for idx, page in enumerate(pages_list):
-                progress(idx + 1, len(pages_list), issue["title"])
-                mhdownloader.download_url(page, path)
+            for chosen_issue in chosen_issues:
+
+                if not str(chosen_issue).isdigit():
+                    interval = [int(i) for i in chosen_issue.split('-')]
+                    if len(interval) <= 1:
+                        print(chosen_issue + " é uma opção inválida e será descartada.")
+                        continue
+                    [chosen_issues.append(x) for x in list(range(interval[0], interval[1]+1))]
+                    continue
+
+                try:
+                    issue = issues_list[int(chosen_issue)-1]
+                except IndexError:
+                    print(chosen_issue + " é uma opção inválida e será descartada.")
+                    continue
+
+                path = base_path + issue["title"] + "\\"
+                pages_list = parser.get_pages_from_url(issue["url"])
+                for idx, page in enumerate(pages_list):
+                    progress(idx + 1, len(pages_list), issue["title"])
+                    mhdownloader.download_url(page, path)
+                print()

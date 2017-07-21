@@ -23,7 +23,11 @@ class MangaHostParser():
 
     def search_for(self, title):
         title.replace('\s', '+')
-        soup = BS(self._get_html(MangaHostParser.SEARCH_URL + title), "lxml")
+        try:
+            soup = BS(self._get_html(MangaHostParser.SEARCH_URL + title), "lxml")
+        except urllib.error.URLError:
+            print("Não foi possível conectar ao MangaHost.net.")
+            exit(0)
         search_results = soup.find_all("h3", {"class": "entry-title"})
 
         manga_list = []
@@ -36,14 +40,28 @@ class MangaHostParser():
         soup = BS(self._get_html(url), "lxml")
         ul = soup.find("ul", {"class": "list_chapters"})
         issues_list = []
+        special_issues_list = []
+        spcount = 10000
         if ul:
             a_list = ul.find_all('a')
             for a in a_list:
                 s = BS(a.get('data-content'), "lxml")
                 a2 = s.find('a')
+
+                id = 0
+                if a.get('id').isdigit():
+                    id = int(a.get('id'))
+                else:
+                    spcount -= 1
+                    id = spcount
+                    special_issues_list.append({"title": a.get('data-original-title'),
+                                                "url": a2.get('href'),
+                                                "id": spcount})
+
                 issues_list.append({"title": a.get('data-original-title'),
                                     "url": a2.get('href'),
-                                    "id": a.get('id')})
+                                    "id": id})
+
         else:
             a_list = soup.find_all("a", {"class":"capitulo"})
             id = len(a_list)
@@ -53,7 +71,7 @@ class MangaHostParser():
                                     "id": id})
                 id -= 1
 
-        return sorted(issues_list, key=itemgetter('id'))
+        return sorted(issues_list, key=itemgetter('id')), sorted(special_issues_list, key=itemgetter('id'))
 
     def get_pages_from_url(self, url):
         links = re.search("(var images \= \[)(.+)(\])", self._get_html(url).decode('utf-8')).group(2)
