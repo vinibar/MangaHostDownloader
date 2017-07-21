@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 import os
-import urllib.request ,urllib.error, urllib
+import urllib.request ,urllib.error, urllib.parse, contextlib
 from mhparser import MangaHostParser
-
+from PIL import Image
+import re
 
 class MangaHostDownloader:
+
+    def __init__(self):
+        self._pattern = re.compile(".+\.jpg$")
 
     def download_url(self, url, path=""):
         opener = urllib.request.build_opener()
@@ -16,6 +20,20 @@ class MangaHostDownloader:
 
         urllib.request.urlretrieve(url, file_path)
 
+        if not self._pattern.match(file_path):
+            self.convert_to_jpg(file_path)
+
+    def convert_to_jpg(self, file_path):
+        new_path_file = os.path.splitext(file_path)[0]
+        if not self._pattern.match(new_path_file):
+            new_path_file = new_path_file + '.jpg'
+        im = Image.open(file_path).convert('RGB')
+        im.save(file_path, "jpeg")
+        os.rename(file_path, new_path_file)
+
     def get_filename(self, url):
         splitted_url = url.split("/")
         return splitted_url[-1]
+
+    def convert_images_to_jpg(self):
+        pass
