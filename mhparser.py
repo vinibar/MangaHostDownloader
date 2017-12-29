@@ -73,12 +73,34 @@ class MangaHostParser():
 
         return sorted(issues_list, key=itemgetter('id')), sorted(special_issues_list, key=itemgetter('id'))
 
-    def get_pages_from_url(self, url):
-        links = re.search("(var images \= \[)(.+)(\])", self._get_html(url).decode('utf-8')).group(2)
-        links = links.replace('"', '').split(",")
 
-        i = 0
-        while i < len(links):
-            links[i] = re.search(r"(?<=src=').*?(?=')", links[i]).group(0)
-            i+=1
+    def get_pages_from_url(self, url):
+
+        links = []
+
+        # Busca as imagens que estão explicitas na página
+        try:
+            soup = BS(self._get_html(url), "lxml")
+        except urllib.error.URLError:
+            print("Não foi possível conectar ao MangaHost.net.")
+            exit(0)
+
+        search_results = soup.select('a[title*="Imagem"]')
+        for item in search_results:
+            links.append(item.find('img').get('src'))
+
+        # Busca as imagens que estão referenciadas em javascript
+        js_links = re.search("(var images \= \[)(.+)(\])", self._get_html(url).decode('utf-8')).group(2)
+        js_links = js_links.replace('"', '').replace(',', '')
+
+        soup = BS(js_links, "lxml")
+        search_results = soup.select('a[title*="Imagem"]')
+        for item in search_results:
+            links.append(item.find('img').get('src'))
+
+        links = list(set(links))
+        links.sort()
         return links
+
+
+

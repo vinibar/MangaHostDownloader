@@ -1,23 +1,26 @@
 # -*- coding: utf-8 -*-
 import os
+import zipfile
+import shutil
 
 from tabulate import tabulate
 
 from progress import progress
 from mhdownloader import MangaHostDownloader
 from mhparser import MangaHostParser
+from requests.utils import requote_uri
 
 
 def choose_manga():
-    choice = None
-    while not choice:
+    choice = ""
+    while choice.strip() == "":
         choice = input("Qual mangá você busca? > ")
     return choice
 
 if __name__ == '__main__':
 
     print('------------------ MangaHost Downloader -------------------')
-    print('|Esse programa foi criado apenas para fins de aprendizagem|')
+    print('|   Download de Mangás diretamente do site MangaHost.com  |')
     print('-----------------------------------------------------------')
     print('\n')
 
@@ -30,7 +33,7 @@ if __name__ == '__main__':
         print("Não há resultados para essa busca.")
         exit(0)
 
-    print("Resultados da busca:\n")
+    print("\n\nResultados da busca:\n")
     count = 0
     tab_results = []
     for item in results:
@@ -42,7 +45,7 @@ if __name__ == '__main__':
     choice = None
 
     while True:
-        choice = input("Digite o tem desejado: >")
+        choice = input("Digite o item desejado: >")
         if not choice.isdigit():
             print("Opção inválida. Tente novamente.")
             continue
@@ -105,7 +108,15 @@ if __name__ == '__main__':
 
                 path = base_path + issue["title"] + "\\"
                 pages_list = parser.get_pages_from_url(issue["url"])
+                print("Quantidade de paginas: ", len(pages_list))
                 for idx, page in enumerate(pages_list):
                     progress(idx + 1, len(pages_list), issue["title"])
-                    mhdownloader.download_url(page, path)
-                print()
+                    mhdownloader.download_url(requote_uri(page), path)
+
+                zip_path = base_path + issue["title"] + '.cbz'
+                zipf = zipfile.ZipFile(zip_path, 'w')
+                for file in os.listdir(path):
+                    zipf.write(os.path.join(path, file),
+                                     os.path.relpath(os.path.join(path, file), path), compress_type=zipfile.ZIP_DEFLATED)
+                zipf.close()
+                shutil.rmtree(path)

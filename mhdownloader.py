@@ -29,7 +29,10 @@ class MangaHostDownloader:
             new_path_file = new_path_file + '.jpg'
         im = Image.open(file_path).convert('RGB')
         im.save(file_path, "jpeg")
-        os.rename(file_path, new_path_file)
+        try:
+            os.rename(file_path, new_path_file)
+        except FileExistsError:
+            os.remove(file_path)
 
     def get_filename(self, url):
         splitted_url = url.split("/")
