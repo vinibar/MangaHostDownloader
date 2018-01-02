@@ -108,6 +108,7 @@ if __name__ == '__main__':
 
                 path = base_path + issue["title"] + "\\"
                 pages_list = parser.get_pages_from_url(issue["url"])
+                print("Edição: ", issue["title"])
                 print("Quantidade de paginas: ", len(pages_list))
                 for idx, page in enumerate(pages_list):
                     progress(idx + 1, len(pages_list), issue["title"])
@@ -116,7 +117,9 @@ if __name__ == '__main__':
                 zip_path = base_path + issue["title"] + '.cbz'
                 zipf = zipfile.ZipFile(zip_path, 'w')
                 for file in os.listdir(path):
-                    zipf.write(os.path.join(path, file),
-                                     os.path.relpath(os.path.join(path, file), path), compress_type=zipfile.ZIP_DEFLATED)
+                    # remove white borders
+                    fp = os.path.join(path, file)
+                    parser.remove_borders(fp)
+                    zipf.write(fp, os.path.relpath(os.path.join(path, file), path), compress_type=zipfile.ZIP_DEFLATED)
                 zipf.close()
                 shutil.rmtree(path)

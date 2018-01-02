@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import urllib.request ,urllib.error, urllib.parse, contextlib
-from mhparser import MangaHostParser
+from mhparser import *
 from PIL import Image
 import re
 
@@ -24,10 +24,20 @@ class MangaHostDownloader:
             self.convert_to_jpg(file_path)
 
     def convert_to_jpg(self, file_path):
+
+        parser = MangaHostParser()
+
         new_path_file = os.path.splitext(file_path)[0]
         if not self._pattern.match(new_path_file):
             new_path_file = new_path_file + '.jpg'
+
         im = Image.open(file_path).convert('RGB')
+        try:
+            im = parser.remove_borders(im)
+        except(InvalidImage):
+            os.remove(file_path)
+            return None
+
         im.save(file_path, "jpeg")
         try:
             os.rename(file_path, new_path_file)

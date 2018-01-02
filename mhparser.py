@@ -4,6 +4,7 @@ import urllib.request ,urllib.error, urllib
 import re
 from operator import itemgetter
 from bs4 import BeautifulSoup as BS
+from PIL import Image, ImageChops
 
 class MangaHostParser():
 
@@ -102,5 +103,23 @@ class MangaHostParser():
         links.sort()
         return links
 
+    def remove_borders(self, im):
+        try:
+            bg = Image.new(im.mode, im.size, im.getpixel((0, 0)))
+            diff = ImageChops.difference(im, bg)
+            diff = ImageChops.add(diff, diff, 2.0, -100)
+            bbox = diff.getbbox()
+            if bbox:
+                im = self._remove_credits(im.crop(bbox))
+        except(AttributeError):
+            pass
+        return im
+
+    def _remove_credits(self, im):
+        if (im.size[1] - 50 > 0):
+            im = im.crop((0, 0, im.size[0], im.size[1] - 50))
+        return im
 
 
+class InvalidImage(Exception):
+    pass
